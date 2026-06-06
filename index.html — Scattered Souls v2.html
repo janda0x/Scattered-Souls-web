@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scattered Souls</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+  --bg:#04040a;
+  --card:rgba(255,255,255,0.03);
+  --border:rgba(255,255,255,0.06);
+  --g1:#00ff88;
+  --g2:#7b61ff;
+  --g3:#ff3cac;
+  --text:#c8c8d4;
+  --white:#f0f0f8;
+}
+
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);
+  overflow-x:hidden;
+}
+
+/* NOISE TEXTURE */
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:999;opacity:.4;
+}
+
+/* GRADIENT ORBS */
+.orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;}
+.orb1{width:500px;height:500px;background:rgba(0,255,136,0.06);top:-100px;left:-100px;}
+.orb2{width:400px;height:400px;background:rgba(123,97,255,0.07);bottom:-50px;right:-50px;}
+.orb3{width:300px;height:300px;background:rgba(255,60,172,0.05);top:50%;left:50%;transform:translate(-50%,-50%);}
+
+/* NAV */
+nav{
+  position:fixed;top:0;width:100%;z-index:100;
+  padding:0 32px;height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(4,4,10,0.7);
+  backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{
+  font-size:13px;font-weight:700;letter-spacing:3px;
+  color:var(--white);text-transform:uppercase;
+}
+.nav-right{display:flex;align-items:center;gap:12px;}
+.nav-link{
+  font-size:11px;color:rgba(255,255,255,0.4);
+  text-decoration:none;letter-spacing:1px;
+  padding:6px 10px;border-radius:6px;
+  transition:all .2s;
+}
+.nav-link:hover{color:var(--g1);background:rgba(0,255,136,0.06);}
+.nav-link svg{width:14px;height:14px;vertical-align:middle;margin-right:4px;}
+#walletChip{
+  font-size:10px;color:var(--g1);
+  padding:4px 10px;border-radius:20px;
+  background:rgba(0,255,136,0.08);
+  border:1px solid rgba(0,255,136,0.15);
+}
+#connectBtn{
+  padding:7px 16px;border-radius:6px;border:none;cursor:pointer;
+  background:var(--g1);color:#000;
+  font-family:'Space Grotesk',sans-serif;
+  font-size:11px;font-weight:700;letter-spacing:1px;
+  transition:opacity .2s;
+}
+#connectBtn:hover{opacity:.85;}
+
+/* HERO */
+.hero{
+  position:relative;z-index:1;
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  justify-content:center;align-items:center;
+  text-align:center;padding:100px 24px 60px;
+}
+.hero-kicker{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:10px;letter-spacing:3px;color:rgba(255,255,255,0.3);
+  padding:6px 14px;border-radius:20px;
+  border:1px solid var(--border);
+  background:var(--card);margin-bottom:32px;
+}
+.hero-kicker span{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--g1);animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+.hero h1{
+  font-size:clamp(44px,10vw,96px);
+  font-weight:700;line-height:1;
+  color:var(--white);margin-bottom:6px;
+  letter-spacing:-2px;
+}
+.hero h1 em{
+  font-style:normal;
+  background:linear-gradient(135deg,var(--g1),var(--g2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero-sub{
+  font-size:clamp(28px,5vw,52px);
+  font-weight:300;color:rgba(255,255,255,0.2);
+  letter-spacing:-1px;margin-bottom:28px;
+}
+.hero-desc{
+  font-size:15px;color:rgba(255,255,255,0.4);
+  max-width:400px;line-height:1.8;margin-bottom:40px;
+  font-weight:300;
+}
+.hero-cta{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.cta-main{
+  padding:13px 28px;border-radius:8px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--g1),#00c8ff);
+  color:#000;font-family:'Space Grotesk',sans-serif;
+  font-weight:700;font-size:13px;letter-spacing:1px;
+  text-decoration:none;transition:opacity .2s;
+}
+.cta-main:hover{opacity:.85;}
+.cta-ghost{
+  padding:13px 28px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--border);background:var(--card);
+  color:rgba(255,255,255,0.5);font-family:'Space Grotesk',sans-serif;
+  font-size:13px;letter-spacing:1px;text-decoration:none;
+  transition:all .2s;
+}
+.cta-ghost:hover{border-color:rgba(255,255,255,0.2);color:var(--white);}
+
+/* TICKER */
+.ticker{
+  position:relative;z-index:1;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  padding:14px 0;overflow:hidden;
+  background:rgba(0,255,136,0.02);
+}
+.ticker-inner{
+  display:flex;gap:48px;
+  white-space:nowrap;
+  animation:ticker 20s linear infinite;
+}
+@keyframes ticker{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+.ticker-item{
+  font-size:11px;letter-spacing:2px;
+  color:rgba(0,255,136,0.5);
+  display:flex;align-items:center;gap:10px;
+}
+.ticker-item::after{content:'·';color:rgba(255,255,255,0.1);}
+
+/* STATS */
+.stats{
+  position:relative;z-index:1;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  border-bottom:1px solid var(--border);
+}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr);}}
+.stat{
+  padding:32px 20px;text-align:center;
+  border-right:1px solid var(--border);
+}
+.stat:last-child{border-right:none;}
+.stat-n{
+  font-size:32px;font-weight:700;
+  background:linear-gradient(90deg,var(--g1),#00c8ff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:6px;
+}
+.stat-l{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.25);}
+
+/* MINT */
+.mint-wrap{
+  position:relative;z-index:1;
+  max-width:440px;margin:80px auto;padding:0 20px;
+}
+.mint-card{
+  background:rgba(255,255,255,0.02);
+  border:1px solid var(--border);
+  border-radius:16px;padding:32px;
+  position:relative;overflow:hidden;
+}
+.mint-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--g1),transparent);
+}
+.mint-label{
+  font-size:9px;letter-spacing:3px;color:rgba(255,255,255,0.2);
+  margin-bottom:24px;
+}
+.price-display{
+  margin-bottom:20px;text-align:center;
+}
+.price-big{font-size:36px;font-weight:700;color:var(--white);}
+.price-small{font-size:11px;color:rgba(255,255,255,0.25);margin-top:4px;letter-spacing:1px;}
+.open-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;padding:5px 12px;border-radius:20px;
+  margin-bottom:20px;
+}
+.open-badge.open{background:rgba(0,255,136,0.1);color:var(--g1);border:1px solid rgba(0,255,136,0.2);}
+.open-badge.closed{background:rgba(255,60,172,0.1);color:var(--g3);border:1px solid rgba(255,60,172,0.2);}
+.open-badge .dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+
+.qty-ctrl{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.q-btn{
+  width:40px;height:40px;border-radius:8px;
+  border:1px solid var(--border);background:var(--card);
+  color:var(--white);font-size:18px;cursor:pointer;transition:all .2s;
+}
+.q-btn:hover{border-color:var(--g1);color:var(--g1);}
+#qtyDisplay{flex:1;text-align:center;font-size:24px;font-weight:700;color:var(--white);}
+.total-eth{text-align:center;font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:20px;}
+
+.btn-mint{
+  width:100%;padding:15px;border-radius:10px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--g1),#00c8ff);
+  color:#000;font-family:'Space Grotesk',sans-serif;
+  font-weight:700;font-size:14px;letter-spacing:1px;
+  margin-bottom:10px;transition:opacity .2s;
+}
+.btn-mint:hover{opacity:.85;}
+.btn-mint:disabled{opacity:.3;cursor:not-allowed;}
+.btn-free{
+  width:100%;padding:13px;border-radius:10px;cursor:pointer;
+  border:1px solid rgba(123,97,255,0.3);
+  background:rgba(123,97,255,0.06);
+  color:rgba(123,97,255,0.9);
+  font-family:'Space Grotesk',sans-serif;
+  font-size:13px;letter-spacing:1px;transition:all .2s;
+}
+.btn-free:hover{background:rgba(123,97,255,0.12);}
+.btn-free:disabled{opacity:.3;cursor:not-allowed;}
+.tx-msg{font-size:11px;text-align:center;min-height:18px;margin-top:10px;color:var(--g1);}
+.tx-msg.err{color:var(--g3);}
+
+/* TRAITS */
+.traits-section{
+  position:relative;z-index:1;
+  padding:80px 32px;
+  border-top:1px solid var(--border);
+}
+.section-label{
+  font-size:9px;letter-spacing:4px;color:rgba(255,255,255,0.2);
+  margin-bottom:40px;text-align:center;
+}
+.traits-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:10px;max-width:800px;margin:0 auto;
+}
+.trait-chip{
+  padding:14px 16px;border-radius:10px;
+  background:var(--card);border:1px solid var(--border);
+  text-align:center;
+}
+.trait-name{font-size:10px;letter-spacing:1px;color:rgba(255,255,255,0.25);margin-bottom:6px;}
+.trait-count{font-size:18px;font-weight:700;color:var(--white);}
+
+/* FAQ */
+.faq-section{
+  position:relative;z-index:1;
+  padding:80px 32px;
+  border-top:1px solid var(--border);
+  max-width:640px;margin:0 auto;
+}
+.faq-item{
+  border-bottom:1px solid var(--border);
+  padding:20px 0;cursor:pointer;
+}
+.faq-q{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:14px;color:var(--white);font-weight:500;
+  user-select:none;
+}
+.faq-icon{
+  font-size:18px;color:rgba(255,255,255,0.3);
+  transition:transform .2s;flex-shrink:0;
+}
+.faq-item.open .faq-icon{transform:rotate(45deg);color:var(--g1);}
+.faq-a{
+  font-size:13px;color:rgba(255,255,255,0.4);
+  line-height:1.8;max-height:0;overflow:hidden;
+  transition:max-height .3s ease,padding .3s;
+}
+.faq-item.open .faq-a{max-height:200px;padding-top:12px;}
+
+/* FOOTER */
+footer{
+  position:relative;z-index:1;
+  border-top:1px solid var(--border);
+  padding:40px 32px;
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+}
+.footer-links{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;}
+.footer-link{
+  font-size:11px;color:rgba(255,255,255,0.3);
+  text-decoration:none;letter-spacing:1px;transition:color .2s;
+}
+.footer-link:hover{color:var(--g1);}
+.footer-copy{font-size:10px;color:rgba(255,255,255,0.15);letter-spacing:1px;}
+
+@media(max-width:480px){
+  nav{padding:0 16px;}
+  .hero{padding:90px 16px 50px;}
+  .mint-wrap{margin:50px auto;}
+  .traits-section,.faq-section{padding:50px 16px;}
+  footer{padding:30px 16px;}
+}
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<nav>
+  <div class="nav-logo">Scattered Souls</div>
+  <div class="nav-right">
+    <a class="nav-link" href="https://x.com/Scattered5ouls" target="_blank">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      TWITTER
+    </a>
+    <a class="nav-link" href="https://opensea.io/collection/scattered-souls" target="_blank">OPENSEA</a>
+    <span id="walletChip" style="display:none"></span>
+    <button id="connectBtn" onclick="connectWallet()">CONNECT</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-kicker"><span></span>LIVE ON ETHEREUM MAINNET</div>
+  <h1>Every soul<br>is <em>different.</em></h1>
+  <div class="hero-sub">None are the same.</div>
+  <p class="hero-desc">10,000 particle portraits generated entirely on-chain. No two alike. No servers. No IPFS. Just code and math, permanent on Ethereum.</p>
+  <div class="hero-cta">
+    <a href="https://opensea.io/collection/scattered-souls" target="_blank" class="cta-main">VIEW COLLECTION</a>
+    <a href="https://etherscan.io/address/0x744f0d9de2E0DDd02129942388Aac1e263417a2c" target="_blank" class="cta-ghost">ETHERSCAN ↗</a>
+  </div>
+</section>
+
+<div class="ticker">
+  <div class="ticker-inner" id="ticker">
+    <span class="ticker-item">10,000 UNIQUE SOULS</span>
+    <span class="ticker-item">FULLY ON-CHAIN SVG</span>
+    <span class="ticker-item">FREE MINT 2/WALLET</span>
+    <span class="ticker-item">NO IPFS</span>
+    <span class="ticker-item">ERC-721</span>
+    <span class="ticker-item">2% ROYALTY</span>
+    <span class="ticker-item">ETHEREUM MAINNET</span>
+    <span class="ticker-item">10,000 UNIQUE SOULS</span>
+    <span class="ticker-item">FULLY ON-CHAIN SVG</span>
+    <span class="ticker-item">FREE MINT 2/WALLET</span>
+    <span class="ticker-item">NO IPFS</span>
+    <span class="ticker-item">ERC-721</span>
+    <span class="ticker-item">2% ROYALTY</span>
+    <span class="ticker-item">ETHEREUM MAINNET</span>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-n" id="sMinted">—</div><div class="stat-l">MINTED</div></div>
+  <div class="stat"><div class="stat-n" id="sLeft">—</div><div class="stat-l">REMAINING</div></div>
+  <div class="stat"><div class="stat-n" id="sPrice">—</div><div class="stat-l">PAID PRICE</div></div>
+  <div class="stat"><div class="stat-n" id="sStatus">—</div><div class="stat-l">STATUS</div></div>
+</div>
+
+<div class="mint-wrap">
+  <div class="mint-card">
+    <div class="mint-label">MINT YOUR SOUL</div>
+    <div class="price-display">
+      <div class="price-big" id="mintPrice">—</div>
+      <div class="price-small">PER TOKEN · MAX 20/TX</div>
+    </div>
+    <div style="text-align:center;margin-bottom:16px">
+      <span class="open-badge closed" id="openBadge"><span class="dot"></span>CHECKING...</span>
+    </div>
+    <div class="qty-ctrl">
+      <button class="q-btn" onclick="changeQty(-1)">−</button>
+      <div id="qtyDisplay">1</div>
+      <button class="q-btn" onclick="changeQty(1)">+</button>
+    </div>
+    <div class="total-eth" id="totalCost">Total: —</div>
+    <button class="btn-mint" id="mintBtn" onclick="doMint()" disabled>CONNECT WALLET</button>
+    <button class="btn-free" id="freeBtn" onclick="doFree()" disabled>FREE MINT · 2 PER WALLET</button>
+    <div class="tx-msg" id="txMsg"></div>
+  </div>
+</div>
+
+<section class="traits-section">
+  <div class="section-label">TRAIT CATEGORIES</div>
+  <div class="traits-grid">
+    <div class="trait-chip"><div class="trait-name">HEAD SHAPES</div><div class="trait-count">10</div></div>
+    <div class="trait-chip"><div class="trait-name">HAIR STYLES</div><div class="trait-count">10</div></div>
+    <div class="trait-chip"><div class="trait-name">PALETTES</div><div class="trait-count">14</div></div>
+    <div class="trait-chip"><div class="trait-name">SKIN TONES</div><div class="trait-count">6</div></div>
+    <div class="trait-chip"><div class="trait-name">BACKGROUNDS</div><div class="trait-count">8</div></div>
+    <div class="trait-chip"><div class="trait-name">AURA TYPES</div><div class="trait-count">4</div></div>
+    <div class="trait-chip"><div class="trait-name">FACE MARKS</div><div class="trait-count">4</div></div>
+    <div class="trait-chip"><div class="trait-name">BODY MARKS</div><div class="trait-count">4</div></div>
+    <div class="trait-chip"><div class="trait-name">DENSITY</div><div class="trait-count">4</div></div>
+    <div class="trait-chip"><div class="trait-name">TOTAL TRAITS</div><div class="trait-count">64+</div></div>
+  </div>
+</section>
+
+<section class="faq-section">
+  <div class="section-label">FAQ</div>
+
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-q">What is Scattered Souls?<span class="faq-icon">+</span></div>
+    <div class="faq-a">Scattered Souls is a collection of 10,000 fully on-chain generative particle portraits on Ethereum. Each token is a unique silhouette built from hundreds of colored particles, generated entirely from smart contract code with no external dependencies.</div>
+  </div>
+
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-q">What does "fully on-chain" mean?<span class="faq-icon">+</span></div>
+    <div class="faq-a">Every pixel, every color, every trait — all generated and stored directly on the Ethereum blockchain. No IPFS, no servers, no cloud storage. As long as Ethereum exists, your soul exists.</div>
+  </div>
+
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-q">How does minting work?<span class="faq-icon">+</span></div>
+    <div class="faq-a">Each wallet gets 2 free mints via the freemint() function. Additional tokens cost 0.0001 ETH each, up to 20 per transaction. Total supply is capped at 10,000.</div>
+  </div>
+
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-q">Are all souls truly unique?<span class="faq-icon">+</span></div>
+    <div class="faq-a">Yes. Each soul's traits — head shape, hair, palette, skin tone, aura and more — are derived deterministically from the token ID using on-chain randomness. No two souls share the exact same combination.</div>
+  </div>
+
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-q">What are the royalties?<span class="faq-icon">+</span></div>
+    <div class="faq-a">2% royalty on secondary sales, enforced via the ERC-2981 standard. This helps sustain the project long-term.</div>
+  </div>
+
+  <div class="faq-item" onclick="toggleFaq(this)">
+    <div class="faq-q">Where can I trade?<span class="faq-icon">+</span></div>
+    <div class="faq-a">Scattered Souls is available on OpenSea and any marketplace that supports ERC-721 tokens on Ethereum mainnet.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-links">
+    <a class="footer-link" href="https://x.com/Scattered5ouls" target="_blank">TWITTER / X</a>
+    <a class="footer-link" href="https://opensea.io/collection/scattered-souls" target="_blank">OPENSEA</a>
+    <a class="footer-link" href="https://etherscan.io/address/0x744f0d9de2E0DDd02129942388Aac1e263417a2c" target="_blank">CONTRACT</a>
+  </div>
+  <div class="footer-copy">SCATTERED SOULS © 2026 · FULLY ON-CHAIN · NO IPFS</div>
+</footer>
+
+<script>
+const MAIN='0x744f0d9de2E0DDd02129942388Aac1e263417a2c';
+const ABI=[
+  'function totalSupply() view returns (uint256)',
+  'function mintOpen() view returns (bool)',
+  'function price() view returns (uint256)',
+  'function mint(uint256) payable',
+  'function freemint()',
+];
+let provider,signer,contract,userAddr,qty=1;
+const $=id=>document.getElementById(id);
+const fmt=v=>parseFloat(ethers.formatEther(v)).toFixed(4)+' ETH';
+
+function toggleFaq(el){
+  el.classList.toggle('open');
+}
+
+async function connectWallet(){
+  if(!window.ethereum){alert('MetaMask not found!');return;}
+  provider=new ethers.BrowserProvider(window.ethereum);
+  signer=await provider.getSigner();
+  userAddr=await signer.getAddress();
+  contract=new ethers.Contract(MAIN,ABI,signer);
+  $('connectBtn').style.display='none';
+  const chip=$('walletChip');
+  chip.style.display='inline-block';
+  chip.textContent=userAddr.slice(0,6)+'...'+userAddr.slice(-4);
+  $('mintBtn').disabled=false;
+  $('freeBtn').disabled=false;
+  $('mintBtn').textContent='MINT';
+  await refreshStats();
+}
+
+async function refreshStats(){
+  try{
+    const rpc = new ethers.JsonRpcProvider('https://ethereum-rpc.publicnode.com');
+    const p=contract||new ethers.Contract(MAIN,ABI,rpc);
+    const timeout = new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),8000));
+    const [supply,open,price]=await Promise.race([
+      Promise.all([p.totalSupply(),p.mintOpen(),p.price()]),
+      timeout
+    ]);
+    $('sMinted').textContent=supply.toString();
+    $('sLeft').textContent=(10000-Number(supply)).toString();
+    $('sPrice').textContent=fmt(price);
+    $('mintPrice').textContent=fmt(price);
+    const badge=$('openBadge');
+    if(open){badge.className='open-badge open';badge.innerHTML='<span class="dot"></span>OPEN';}
+    else{badge.className='open-badge closed';badge.innerHTML='<span class="dot"></span>CLOSED';}
+    $('sStatus').textContent=open?'OPEN':'CLOSED';
+    $('sStatus').style.color=open?'var(--g1)':'var(--g3)';
+    calcCost(price);
+  }catch(e){
+    $('openBadge').className='open-badge closed';
+    $('openBadge').innerHTML='<span class="dot"></span>LIVE ON ETHEREUM';
+  }
+}
+
+function calcCost(p){
+  if(!p)return;
+  $('totalCost').textContent='Total: '+parseFloat(ethers.formatEther(p*BigInt(qty))).toFixed(4)+' ETH';
+}
+
+function changeQty(d){
+  qty=Math.max(1,Math.min(20,qty+d));
+  $('qtyDisplay').textContent=qty;
+  refreshStats();
+}
+
+async function doMint(){
+  const btn=$('mintBtn'),msg=$('txMsg');
+  try{
+    btn.disabled=true;msg.className='tx-msg';
+    msg.textContent='Confirm in wallet...';
+    const price=await contract.price();
+    const tx=await contract.mint(qty,{value:price*BigInt(qty)});
+    msg.textContent='Minting...';
+    await tx.wait();
+    msg.textContent='✓ Minted '+qty+' soul(s)!';
+    await refreshStats();
+  }catch(e){
+    msg.className='tx-msg err';
+    msg.textContent=e.reason||e.message?.slice(0,50)||'Error';
+  }finally{btn.disabled=false;}
+}
+
+async function doFree(){
+  const btn=$('freeBtn'),msg=$('txMsg');
+  try{
+    btn.disabled=true;msg.className='tx-msg';
+    msg.textContent='Confirm in wallet...';
+    const tx=await contract.freemint();
+    msg.textContent='Minting...';
+    await tx.wait();
+    msg.textContent='✓ Free soul claimed!';
+    await refreshStats();
+  }catch(e){
+    msg.className='tx-msg err';
+    msg.textContent=e.reason||e.message?.slice(0,50)||'Error';
+  }finally{btn.disabled=false;}
+}
+
+refreshStats();
+setInterval(refreshStats,30000);
+</script>
+</body>
+</html>
